@@ -57,16 +57,18 @@ def sentiment():
     key = os.environ["AZ_KEY"]
 
     if endpoint and key:
-        client = TextAnalyticsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
-        
+        client = TextAnalyticsClient(
+            endpoint=endpoint, credential=AzureKeyCredential(key)
+        )
+
         conn = get_db_connection()
         query = conn.execute("SELECT text FROM message LIMIT 10").fetchall()
-        conn.close()    
+        conn.close()
 
         messages = [m["text"] for m in query]
         result = client.analyze_sentiment(messages)
         docs = [doc for doc in result if not doc.is_error]
-        
+
         sentiments = ""
         for idx, doc in enumerate(docs):
             m = f'<div class="col-md-6"><i>{messages[idx]}</i></div>'
@@ -76,7 +78,7 @@ def sentiment():
 
             sentiments = "".join([sentiments, '<div class="row">'])
             sentiments = "".join([sentiments, info])
-            sentiments = "".join([sentiments, '</div>'])
+            sentiments = "".join([sentiments, "</div>"])
 
         tmpl = """
         <div id="modal-backdrop" class="modal-backdrop fade show" style="display:block;"></div>
@@ -105,8 +107,6 @@ def sentiment():
     else:
         print("error")
         return None
-
-
 
 
 @app.route("/hello", methods=["POST"])
