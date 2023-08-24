@@ -2,6 +2,9 @@ import os
 import sqlite3
 import datetime
 
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.textanalytics import TextAnalyticsClient
+
 from flask import (
     Flask,
     redirect,
@@ -46,6 +49,64 @@ def message():
     resp = "".join(body)
 
     return make_response(resp, push_url=False)
+
+
+@app.route("/sentiment", methods=["GET"])
+def sentiment():
+    endpoint = os.environ["AZ_ENDPOINT"]
+    key = os.environ["AZ_KEY"]
+
+    if endpoint and key:
+        client = TextAnalyticsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
+        
+        conn = get_db_connection()
+        query = conn.execute("SELECT text FROM message LIMIT 10").fetchall()
+        conn.close()    
+
+        messages = [m["text"] for m in query]
+        result = client.analyze_sentiment(messages)
+        docs = [doc for doc in result if not doc.is_error]
+        
+        sentiments = ""
+        for idx, doc in enumerate(docs):
+            m = f'<div class="col-md-6"><i>{messages[idx]}</i></div>'
+            score = max(dict(doc.confidence_scores).values())
+            s = f'<div class="col-md-6"><b>{doc.sentiment.capitalize()} with {score} certainty</b></div>'
+            info = "".join([m, s])
+
+            sentiments = "".join([sentiments, '<div class="row">'])
+            sentiments = "".join([sentiments, info])
+            sentiments = "".join([sentiments, '</div>'])
+
+        tmpl = """
+        <div id="modal-backdrop" class="modal-backdrop fade show" style="display:block;"></div>
+        <div id="modal" class="modal fade show" tabindex="-1" style="display:block;">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sentiment analysis</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        {}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+            </div>
+        </div>
+        """
+        resp = tmpl.format(sentiments)
+
+        return make_response(resp, push_url=False)
+
+    else:
+        print("error")
+        return None
+
+
 
 
 @app.route("/hello", methods=["POST"])
