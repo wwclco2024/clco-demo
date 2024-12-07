@@ -1,4 +1,4 @@
-# CLCO App
+# CLCO App test
 
 Demo app for the Cloud Computing course at UAS Technikum Wien.
 
