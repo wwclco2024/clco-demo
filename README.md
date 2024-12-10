@@ -1,4 +1,4 @@
-# CLCO App test
+# CLCO App test yuxin wang
 
 Demo app for the Cloud Computing course at UAS Technikum Wien.
 
